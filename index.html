@@ -7,6 +7,29 @@
 <link rel="icon" href="favicon-96x96.png" type="image/x-icon">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyDAVioPJQ6ttKmsRMqxFmniVjyuB8O1SuM",
+    authDomain: "neurova-7099b.firebaseapp.com",
+    projectId: "neurova-7099b",
+    storageBucket: "neurova-7099b.firebasestorage.app",
+    messagingSenderId: "635967924372",
+    appId: "1:635967924372:web:bd84b65344d233b2e2ec81",
+    measurementId: "G-01S8HX8252"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
 <style>
   :root{
     --bg:#f4f6f4;
