@@ -359,12 +359,25 @@ window.Neurova = window.Neurova || {};
   const runTestBtn = document.getElementById('runTestBtn');
   const testOptionHint = document.getElementById('testOptionHint');
 
+  const goReactionBtn = document.getElementById('goReactionBtn');
+  const goBaselineBtn = document.getElementById('goBaselineBtn');
+  const reactionOptionHint = document.getElementById('reactionOptionHint');
+  const baselineOptionHint = document.getElementById('baselineOptionHint');
+
   function setTestUnlocked(unlocked){
     calibrationDone = unlocked;
     goTestBtn.disabled = !unlocked;
     runTestBtn.disabled = !unlocked;
+    goReactionBtn.disabled = !unlocked;
+    goBaselineBtn.disabled = !unlocked;
     testOptionHint.textContent = unlocked
       ? 'Check current electrode placement against the baseline.'
+      : 'Run a calibration first to unlock this.';
+    reactionOptionHint.textContent = unlocked
+      ? 'Coming next — not built yet.'
+      : 'Run a calibration first to unlock this.';
+    baselineOptionHint.textContent = unlocked
+      ? 'Coming next — not built yet.'
       : 'Run a calibration first to unlock this.';
   }
   setTestUnlocked(false);
@@ -456,9 +469,15 @@ window.Neurova = window.Neurova || {};
   document.getElementById('menuBackBtn').addEventListener('click', () => goTo('HOME'));
   document.getElementById('calibBackBtn').addEventListener('click', () => goTo('MENU'));
   document.getElementById('testBackBtn').addEventListener('click', () => goTo('MENU'));
-  document.getElementById('goReactionBtn').addEventListener('click', () => goTo('REACTION_TIME'));
+  goReactionBtn.addEventListener('click', () => {
+    if(goReactionBtn.disabled) return;
+    goTo('REACTION_TIME');
+  });
   document.getElementById('reactionBackBtn').addEventListener('click', () => goTo('MENU'));
-  document.getElementById('goBaselineBtn').addEventListener('click', () => goTo('BASELINE_RECORDING'));
+  goBaselineBtn.addEventListener('click', () => {
+    if(goBaselineBtn.disabled) return;
+    goTo('BASELINE_RECORDING');
+  });
   document.getElementById('baselineBackBtn').addEventListener('click', () => goTo('MENU'));
 
   // How long to wait for the board to actually respond before giving up —
