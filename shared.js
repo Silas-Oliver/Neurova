@@ -781,6 +781,11 @@ window.Neurova = window.Neurova || {};
       if(!firebase.apps.length) firebase.initializeApp(config);
       auth = firebase.auth();
       db = firebase.firestore();
+      // Firestore's default connection can silently stall for a long time on networks
+      // that block its usual streaming connection (school wifi, some proxies/extensions),
+      // only recovering once it times out and falls back on its own. This setting skips
+      // straight to the reliable fallback instead of waiting through that timeout.
+      db.settings({ experimentalAutoDetectLongPolling: true, useFetchStreams: false });
     }catch(e){
       console.error('Firebase failed to initialize:', e);
     }
