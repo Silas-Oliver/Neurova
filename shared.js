@@ -1,3 +1,5 @@
+window.Neurova = window.Neurova || {};
+
 (function(){
   // ---------------- page routing ----------------
   const PAGES = ['home', 'test-menu', 'data', 'specs', 'account'];
@@ -467,6 +469,33 @@
   let testTimeoutId = null;
   let calibProgressTimer = null;
 
+  function renderCalibAuthNote(){
+    const el = document.getElementById('calibAuthNote');
+    if(!el) return;
+    const user = window.Neurova.getUser ? window.Neurova.getUser() : null;
+    if(user){
+      el.innerHTML = '';
+    } else {
+      el.innerHTML = `<div class="calib-auth-note">Not signed in — this baseline will be forgotten if you close this tab. <a href="#account" data-nav="account" id="calibAuthNoteLink">Log in to save it</a>.</div>`;
+      const link = document.getElementById('calibAuthNoteLink');
+      if(link) link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const navLink = document.querySelector('.topnav a[data-nav="account"], .mobile-nav-panel a[data-nav="account"]');
+        if(navLink) navLink.click();
+      });
+    }
+  }
+  renderCalibAuthNote();
+  window.Neurova.onAccountChange = function(){ renderCalibAuthNote(); };
+
+  window.Neurova.applySavedCalibration = function(data){
+    if(!data || typeof data.calibrationBaseline !== 'number') return;
+    setCalibLiveValue(data.calibrationBaseline);
+    setResultIcon('calibIcon', 'good', false);
+    setCalibStatus('Calibrated', 'good', 'Baseline: ' + (Math.round(data.calibrationBaseline * 100) / 100) + ' Ω — loaded from your account. Recalibrate anytime for a fresh reading.');
+    setTestUnlocked(true);
+  };
+
   function finishCalibration(result){
     clearTimeout(calibTimeoutId);
     clearInterval(calibProgressTimer);
@@ -476,8 +505,16 @@
     if(result.ok && result.baseline !== null){
       setCalibLiveValue(result.baseline);
       setResultIcon('calibIcon', 'good', false);
-      setCalibStatus('Calibrated', 'good', 'Baseline: ' + (Math.round(result.baseline * 100) / 100) + ' Ω — ready for the contact test.');
       setTestUnlocked(true);
+      const baselineText = 'Baseline: ' + (Math.round(result.baseline * 100) / 100) + ' Ω — ';
+      if(window.Neurova.saveCalibration && window.Neurova.getUser && window.Neurova.getUser()){
+        setCalibStatus('Calibrated', 'good', baselineText + 'saving to your account…');
+        window.Neurova.saveCalibration(result.baseline).then(saved => {
+          setCalibStatus('Calibrated', 'good', baselineText + (saved ? 'saved to your account.' : 'ready for the contact test.'));
+        });
+      } else {
+        setCalibStatus('Calibrated', 'good', baselineText + 'ready for the contact test.');
+      }
     }else{
       setResultIcon('calibIcon', 'bad', false);
       setCalibStatus('Calibration failed', 'warn', 'The board couldn\'t get enough valid readings — check electrode contact and try again.');
@@ -721,6 +758,10 @@
   let authMode = 'login'; // 'login' | 'signup'
   let authError = '';
   let authBusy = false;
+  let confirmingDelete = false;
+  let deleteBusy = false;
+  let deleteError = '';
+  let exportBusy = false;
 
   if(firebaseReady){
     try{
@@ -729,6 +770,34 @@
       db = firebase.firestore();
     }catch(e){
       console.error('Firebase failed to initialize:', e);
+    }
+  }
+
+  window.Neurova.getUser = () => currentUser;
+
+  window.Neurova.saveCalibration = async function(baselineOhms){
+    if(!firebaseReady || !currentUser || !db) return false;
+    try{
+      await db.collection('users').doc(currentUser.uid).set({
+        calibrationBaseline: baselineOhms,
+        calibrationSavedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      return true;
+    }catch(e){
+      console.error('Saving calibration baseline failed:', e);
+      return false;
+    }
+  };
+
+  async function loadSavedCalibrationForCurrentUser(){
+    if(!firebaseReady || !currentUser || !db) return;
+    try{
+      const snap = await db.collection('users').doc(currentUser.uid).get();
+      if(snap.exists && window.Neurova.applySavedCalibration){
+        window.Neurova.applySavedCalibration(snap.data());
+      }
+    }catch(e){
+      console.error('Loading saved calibration failed:', e);
     }
   }
 
@@ -797,10 +866,86 @@
       </div>`;
   }
 
+  function memberSinceText(){
+    const t = currentUser && currentUser.metadata && currentUser.metadata.creationTime;
+    if(!t) return '';
+    const d = new Date(t);
+    if(isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  async function exportMyData(){
+    const btn = document.getElementById('exportDataBtn');
+    exportBusy = true;
+    if(btn){ btn.disabled = true; btn.textContent = 'Preparing export…'; }
+    try{
+      let profile = {};
+      if(db && currentUser){
+        const snap = await db.collection('users').doc(currentUser.uid).get();
+        if(snap.exists) profile = snap.data();
+      }
+      const exportObj = {
+        email: currentUser.email,
+        name: currentUser.displayName || profile.name || null,
+        memberSince: memberSinceText() || null,
+        calibrationBaselineOhms: typeof profile.calibrationBaseline === 'number' ? profile.calibrationBaseline : null,
+        exportedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'neurova-account-data.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }catch(e){
+      console.error('Export failed:', e);
+      alert('Export failed — please try again.');
+    }finally{
+      exportBusy = false;
+      if(btn){ btn.disabled = false; btn.textContent = 'Export my data'; }
+    }
+  }
+
+  async function performDeleteAccount(){
+    deleteBusy = true;
+    deleteError = '';
+    renderSignedIn();
+    try{
+      if(db && currentUser){
+        try{ await db.collection('users').doc(currentUser.uid).delete(); }
+        catch(e){ console.error('Deleting profile doc failed:', e); }
+      }
+      await currentUser.delete();
+      // onAuthStateChanged fires with null and re-renders to the logged-out form
+    }catch(e){
+      deleteBusy = false;
+      deleteError = (e.code === 'auth/requires-recent-login')
+        ? "For security, please log out and log back in, then try deleting your account again."
+        : "Something went wrong deleting your account. Please try again.";
+      renderSignedIn();
+    }
+  }
+
   function renderSignedIn(){
     if(!accountPanel) return;
     const name = displayNameOf(currentUser);
     const showEmailSecondary = currentUser.displayName && currentUser.displayName !== currentUser.email;
+    const since = memberSinceText();
+
+    const deleteSection = confirmingDelete ? `
+      <div class="danger-zone">
+        ${deleteError ? `<div class="auth-error">${deleteError}</div>` : ''}
+        <p class="danger-copy">This permanently deletes your account and any saved data, including your calibration baseline. This can't be undone.</p>
+        <div class="auth-actions">
+          <button class="btn btn-danger" id="confirmDeleteBtn" ${deleteBusy ? 'disabled' : ''}>${deleteBusy ? 'Deleting…' : 'Yes, delete my account'}</button>
+          <button class="btn btn-ghost" id="cancelDeleteBtn" ${deleteBusy ? 'disabled' : ''}>Cancel</button>
+        </div>
+      </div>` : `
+      <button class="btn-text-danger" id="deleteAccountBtn">Delete account</button>`;
+
     accountPanel.innerHTML = `
       <div class="auth-card">
         <div class="auth-signed-in-row">
@@ -810,14 +955,30 @@
             <div style="color:var(--muted); font-size:12.5px;">${showEmailSecondary ? currentUser.email : 'Signed in'}</div>
           </div>
         </div>
-        <button class="btn btn-ghost" id="logoutBtn" ${authBusy ? 'disabled' : ''}>Log out</button>
+        ${since ? `<div class="member-since">Member since ${since}</div>` : ''}
+        <div class="auth-actions">
+          <button class="btn btn-ghost" id="logoutBtn" ${authBusy ? 'disabled' : ''}>Log out</button>
+          <button class="btn btn-ghost" id="exportDataBtn" ${exportBusy ? 'disabled' : ''}>${exportBusy ? 'Preparing export…' : 'Export my data'}</button>
+        </div>
         <div class="auth-note">Session logging isn't built yet, so there's nothing to sync across devices just yet — but your account is ready for when it is.</div>
+        <div class="danger-zone-wrap">${deleteSection}</div>
       </div>`;
     document.getElementById('logoutBtn').addEventListener('click', async () => {
       authBusy = true; renderSignedIn();
       try{ await auth.signOut(); } catch(e){ console.error(e); }
       authBusy = false;
     });
+    document.getElementById('exportDataBtn').addEventListener('click', exportMyData);
+    if(confirmingDelete){
+      document.getElementById('confirmDeleteBtn').addEventListener('click', performDeleteAccount);
+      document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+        confirmingDelete = false; deleteError = ''; renderSignedIn();
+      });
+    } else {
+      document.getElementById('deleteAccountBtn').addEventListener('click', () => {
+        confirmingDelete = true; renderSignedIn();
+      });
+    }
   }
 
   function renderLoggedOutForm(){
@@ -929,11 +1090,13 @@
   if(firebaseReady && auth){
     auth.onAuthStateChanged(user => {
       currentUser = user;
-      if(!user) authMode = 'login';
+      if(!user){ authMode = 'login'; confirmingDelete = false; deleteError = ''; }
       authError = '';
       authBusy = false;
       renderAccountPanel();
       renderDataAuthBanner();
+      if(window.Neurova.onAccountChange) window.Neurova.onAccountChange();
+      if(user) loadSavedCalibrationForCurrentUser();
     });
   } else {
     renderAccountPanel();
