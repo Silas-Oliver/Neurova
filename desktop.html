@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neurova</title>
+<link rel="icon" href="favicon-96x96.png" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body class="force-desktop">
+
+<div class="site-header">
+  <div class="topbar">
+    <div class="brand" style="cursor:pointer;" data-nav="home">
+      <svg class="brand-mark" viewBox="0 0 24 24" fill="none">
+        <circle cx="6" cy="12" r="3" stroke="#2f6e63" stroke-width="1.6"/>
+        <circle cx="18" cy="12" r="3" stroke="#2f6e63" stroke-width="1.6"/>
+        <path d="M9 12H15" stroke="#2f6e63" stroke-width="1.6"/>
+      </svg>
+      Recovery Glove
+    </div>
+    <div class="topnav">
+      <a href="#home" data-nav="home">Home</a>
+      <a href="#test-menu" data-nav="test-menu">Test menu</a>
+      <a href="#data" data-nav="data">Data</a>
+      <a href="#specs" data-nav="specs">Specs / About</a>
+    </div>
+    <div class="topbar-right">
+      <div class="status-chip">
+        <span class="status-dot" id="topStatusDot"></span>
+        <span id="topStatusText">No device connected</span>
+      </div>
+      <button class="hamburger" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNavPanel">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <div class="mobile-nav-panel" id="mobileNavPanel">
+    <nav>
+      <a href="#home" data-nav="home">Home</a>
+      <a href="#test-menu" data-nav="test-menu">Test menu</a>
+      <a href="#data" data-nav="data">Data</a>
+      <a href="#specs" data-nav="specs">Specs / About</a>
+    </nav>
+  </div>
+</div>
+
+<main class="wrap">
+
+<div class="page page-active" data-page="home" id="page-home">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">Wearable nerve-repair tracking</div>
+        <h1>A compression glove that watches how a damaged nerve recovers, one worn session at a time.</h1>
+        <p class="lede">Electrodes built into the glove pick up electrical activity from the hand as a nerve heals, so change over weeks can be tracked instead of guessed at. This page runs the growing set of tests behind that tracking — checking electrode contact, capturing a personal baseline, timing reaction speed, and logging sessions over time.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="heroConnectBtn">Connect the board</button>
+          <a href="#test-menu" data-nav="test-menu" class="btn btn-ghost">Open the test menu</a>
+        </div>
+      </div>
+      <div class="scope">
+        <div class="scope-head">
+          <span class="scope-label">GLOVE STATUS</span>
+          <span class="scope-label" id="scopeClock">00:00:00</span>
+        </div>
+        <div class="scope-value">128<span>kΩ · nominal</span></div>
+        <svg class="scope-wave" viewBox="0 0 400 80" preserveAspectRatio="none">
+          <polyline points="0,50 20,50 30,20 40,65 50,50 90,50 100,35 110,55 120,50 200,50 210,25 220,60 230,50 400,50"
+            fill="none" stroke="#5fbf8f" stroke-width="1.6"/>
+        </svg>
+        <div class="scope-sweep"></div>
+        <div class="scope-foot">
+          <div class="scope-stat">CONTACT<b>Good</b></div>
+          <div class="scope-stat">VOLTAGE<b>1.62 V</b></div>
+          <div class="scope-stat">BASELINE<b>Set</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section id="roadmap">
+    <div class="section-head">
+      <h2>Five tests, one recovery picture</h2>
+      <p>Contact check and calibration are built and working in the panel below. Reaction-time testing and baseline recording are up next. Together, these are what session logging and long-term recovery tracking get built on top of.</p>
+    </div>
+    <div class="roadmap-layout" id="roadmapLayout">
+      <div class="test-featured" id="testFeatured"></div>
+      <div class="test-grid" id="testGrid"></div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <div class="section-head">
+      <h2>Why every test starts with contact quality</h2>
+      <p>Every reading the glove takes — resistance, reaction time, baseline signal, or anything logged later — rides on top of skin-electrode contact. If that contact is loose or uneven, changes from a shifting glove can look exactly like changes in the underlying signal — which is the one thing you can't afford when the whole point is tracking a slow recovery over weeks. A clean, low, stable resistance reading here means the glove's channel can be trusted; a high or jumpy one means an electrode needs repositioning, a quick skin wipe-down, or a firmer and more even fit before any other test runs.</p>
+    </div>
+    <div class="how-grid">
+      <div class="how-diagram">
+        <svg viewBox="0 0 460 260" width="100%">
+          <rect x="0" y="0" width="460" height="260" fill="none"/>
+          <path d="M40 190 Q230 140 420 190" stroke="#c7d3cd" stroke-width="10" fill="none" stroke-linecap="round"/>
+          <text x="230" y="230" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#5c6d68">SKIN SURFACE</text>
+
+          <circle cx="90" cy="170" r="16" fill="#2f6e63"/>
+          <text x="90" y="174" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#f4f6f4">E1</text>
+
+          <circle cx="370" cy="170" r="16" fill="#2f6e63"/>
+          <text x="370" y="174" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#f4f6f4">E2</text>
+
+          <path d="M90 154 V60 H180" stroke="#1c2b27" stroke-width="1.5" fill="none"/>
+          <path d="M370 154 V60 H280" stroke="#1c2b27" stroke-width="1.5" fill="none"/>
+
+          <rect x="180" y="45" width="100" height="30" rx="4" fill="#ffffff" stroke="#1c2b27" stroke-width="1.5"/>
+          <text x="230" y="65" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#1c2b27">R skin</text>
+
+          <path d="M230 75 V110" stroke="#1c2b27" stroke-width="1.5" fill="none"/>
+          <circle cx="230" cy="122" r="12" fill="none" stroke="#d98a3d" stroke-width="1.5"/>
+          <text x="230" y="126" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#d98a3d">V</text>
+
+          <text x="230" y="20" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#5c6d68">MEASURED PATH</text>
+        </svg>
+      </div>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="idx">1</div>
+          <div>
+            <h3>Put the glove on</h3>
+            <p>Once worn, a small known signal passes across the electrode's skin path and the board measures the voltage drop, giving a real-time resistance reading for that channel.</p>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="idx">2</div>
+          <div>
+            <h3>Calibrate to your own skin</h3>
+            <p>With the electrodes pressed on in your best, firmest placement, the board records your personal baseline resistance. Skin conductivity varies a lot from person to person, so contact quality is judged against your own baseline — not one fixed number for everyone.</p>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="idx">3</div>
+          <div>
+            <h3>Confirm contact before tracking</h3>
+            <p>Each reading is compared against your calibrated baseline and a plain verdict — excellent, good, marginal, poor, or no contact — is sent back over serial before any nerve-signal recording begins.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- UNDER THE HOOD: WIRING + DATA PIPELINE -->
+  <section id="under-the-hood">
+    <div class="section-head">
+      <h2>From a snap electrode to a plotted trend</h2>
+      <p>Three sensors, three electrodes, and one running principle underneath all of it: nothing gets judged against a fixed universal number — every reading is judged against that specific person's own calibrated baseline. Here's how a raw voltage actually turns into something worth tracking over weeks.</p>
+    </div>
+
+    <h3 style="font-size:16px; margin-bottom:16px;">Wiring, sensor by sensor</h3>
+    <div class="wiring-grid">
+
+      <div class="wiring-card">
+        <span class="status-chip-sm st-live">Live</span>
+        <h3>Contact-check circuit</h3>
+        <div class="wiring-conn">
+          <div><b>E1</b><span>→ 5V</span></div>
+          <div><b>E2</b><span>→ resistor → GND</span></div>
+          <div><b>A0</b><span>reads E2 / resistor junction</span></div>
+        </div>
+        <p>The skin between E1 and E2 behaves like the variable resistor in a standard voltage divider. Better contact means lower, steadier resistance, which shows up as a shift in the voltage A0 reads. REF sits unused here — a two-point resistance check has no use for a third, reference-only contact.</p>
+      </div>
+
+      <div class="wiring-card">
+        <span class="status-chip-sm st-next">Next</span>
+        <h3>EMG sensor</h3>
+        <div class="wiring-conn">
+          <div><b>E1</b><span>→ module active input 1</span></div>
+          <div><b>E2</b><span>→ module active input 2</span></div>
+          <div><b>REF</b><span>→ module reference input</span></div>
+          <div><b>VCC / GND</b><span>→ 5V / GND</span></div>
+          <div><b>SIG</b><span>→ A1 (kept separate from A0)</span></div>
+        </div>
+        <p>Same three electrodes get reused, not a new set. REF gives the circuit a stable, muscle-free "zero" — ambient electrical noise hits E1 and E2 almost equally, so comparing their difference cancels most of it out, and REF is what makes that comparison meaningful. Running SIG into A1 instead of A0 lets contact quality and real EMG signal be checked side by side.</p>
+        <details>
+          <summary>Electrode placement guide</summary>
+          <ul>
+            <li><b style="color:var(--ink); font-weight:600;">Muscle belly, not tendon</b> — upper-to-middle third of the forearm, closer to the elbow than the wrist.</li>
+            <li><b style="color:var(--ink); font-weight:600;">Along the fibers</b> — E1 and E2 sit one above the other along the muscle's length, a couple of centimeters apart, not side by side across the arm.</li>
+            <li><b style="color:var(--ink); font-weight:600;">REF on a bony, electrically quiet spot</b> — the wrist bone or elbow, away from active muscle tissue.</li>
+            <li><b style="color:var(--ink); font-weight:600;">Same spot, every session</b> — tracing the outline, a reference photo, or a measured distance from the elbow crease keeps week 3 comparable to week 1, instead of mistaking placement drift for real recovery change.</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="wiring-card">
+        <span class="status-chip-sm st-next">Next</span>
+        <h3>Flex sensor</h3>
+        <div class="wiring-conn">
+          <div><b>Leg 1</b><span>→ 5V</span></div>
+          <div><b>Leg 2</b><span>→ resistor → GND</span></div>
+          <div><b>A2</b><span>reads flex / resistor junction</span></div>
+        </div>
+        <p>The same voltage-divider pattern as the contact-check circuit, just with the flex sensor itself as the variable element instead of skin. It mounts across the index finger's DIP joint — the joint nearest the fingernail — matching the joint the reaction-time test is built to measure.</p>
+      </div>
+
+    </div>
+    <div class="wiring-note">All three share one common ground rail on the breadboard. Connections are made with alligator clips onto each electrode's snap button — fine for bench testing, though worth taping down or eventually soldering once real finger movement starts tugging at the wiring.</div>
+
+    <h3 style="font-size:16px; margin:40px 0 16px;">From a raw number to a recovery trend</h3>
+    <div class="pipeline-grid">
+      <div class="how-step">
+        <div class="idx">1</div>
+        <div>
+          <h3>A raw number, per sensor</h3>
+          <p>Every sensor hands the board the same basic thing: a number from 0 to 1023, since that's simply how the board's analog-to-digital conversion works. What that number represents depends on which sensor produced it — and none of it means anything universal on its own. A raw EMG reading of 600 isn't inherently "strong" or "weak."</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="idx">2</div>
+        <div>
+          <h3>Calibrate to the wearer</h3>
+          <p>Skin conductivity, muscle output, and finger range of motion all vary from person to person, so every sensor is judged against its own wearer's baseline rather than a fixed number: contact against a personal best-contact reading, EMG between "relaxed" and "flexed hard," the flex sensor between "straight" and "fully bent."</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="idx">3</div>
+        <div>
+          <h3>Resistance becomes a verdict</h3>
+          <p>The contact-check circuit turns a calibrated resistance into one of five plain verdicts — None, Poor, Marginal, Good, Excellent — averaging 10 samples first so one noisy reading can't flip the result.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="idx">4</div>
+        <div>
+          <h3>Two sensors, one timed event</h3>
+          <p>The reaction-time test times the relationship between two sensors: a countdown, a randomly-timed go cue (T-cue), the EMG signal crossing above resting baseline (T-emg), and the flex sensor detecting the finger actually move (T-flex). Premotor time is T-emg minus T-cue; electromechanical delay is T-flex minus T-emg.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="idx">5</div>
+        <div>
+          <h3>One run becomes one session record</h3>
+          <p>A finished test's numbers are bundled with the contact quality they were measured under, rather than stored loose. A session measured through bad contact can produce numbers that look like a real physiological change when they're really just noise — so it's never compared against a good-contact session as if the two were equivalent.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="idx">6</div>
+        <div>
+          <h3>Many records become a trend</h3>
+          <p>Plotted session by session over weeks, the same metric can finally show whether recovery looks like it's improving, plateauing, or worth flagging to a clinician — instead of relying on a felt sense of "seems a bit better than last week."</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /page-home -->
+
+<div class="page" data-page="test-menu" id="page-test-menu">
+
+  <!-- PANEL -->
+  <section id="panel" class="panel-section">
+    <div class="wrap" style="padding-top:56px; padding-bottom:56px;">
+      <div class="section-head">
+        <h2>Test menu, live</h2>
+        <p>This talks to the glove's board directly from the browser over Web Serial, without opening the Arduino IDE. Calibration and the contact check are working; the reaction-time test and baseline recording are next up and shown here as placeholders. Run contact check before every other test — nothing else can be trusted without it.</p>
+      </div>
+
+      <div id="unsupportedNotice" class="unsupported" style="display:none;">
+        This browser doesn't support Web Serial. Open this page in Chrome or Edge on desktop to connect the board directly.
+      </div>
+
+      <div class="panel-shell">
+        <div class="panel-bar">
+          <span class="label" id="panelStateLabel">STATE: HOME</span>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <span class="status-chip">
+              <span class="status-dot" id="panelStatusDot"></span>
+              <span id="panelStatusText">Not connected</span>
+            </span>
+            <button class="btn btn-ghost" id="panelConnectBtn" style="padding:8px 14px; font-size:13px;">Connect</button>
+          </div>
+        </div>
+
+        <div class="panel-body">
+
+          <!-- HOME -->
+          <div class="screen active" data-screen="HOME">
+            <h3 class="screen-title">Ready</h3>
+            <p class="screen-sub">Connect the board, then open the menu to run a calibration or a contact test.</p>
+            <div class="screen-actions">
+              <button class="btn btn-primary" id="enterMenuBtn" disabled>Open menu</button>
+            </div>
+          </div>
+
+          <!-- MENU -->
+          <div class="screen" data-screen="MENU">
+            <h3 class="screen-title">Menu</h3>
+            <p class="screen-sub">Choose what to run. Esc returns here from either screen.</p>
+            <div class="menu-options">
+              <button class="menu-option" id="goCalibrateBtn">
+                <h3>Calibrate</h3>
+                <p>Record a baseline with no electrodes on skin.</p>
+              </button>
+              <button class="menu-option" id="goTestBtn" disabled>
+                <h3>Contact test</h3>
+                <p id="testOptionHint">Run a calibration first to unlock this.</p>
+              </button>
+              <button class="menu-option" id="goReactionBtn">
+                <h3>Reaction-time test</h3>
+                <p>Coming next — not built yet.</p>
+              </button>
+              <button class="menu-option" id="goBaselineBtn">
+                <h3>Baseline recording</h3>
+                <p>Coming next — not built yet.</p>
+              </button>
+            </div>
+            <div class="screen-actions">
+              <button class="btn btn-ghost" id="menuBackBtn">Back</button>
+            </div>
+          </div>
+
+          <!-- CALIBRATE -->
+          <div class="screen" data-screen="CALIBRATE">
+            <h3 class="screen-title">Calibrate</h3>
+            <p class="screen-sub">Place the electrode using your best, firmest contact, then run the calibration. This captures <em>your</em> personal baseline — skin conductivity varies from person to person, so the contact test judges you against your own skin, not a fixed number.</p>
+            <div class="placement-steps">
+              <div><b>01</b> Clean the skin — wipe away oil or sweat</div>
+              <div><b>02</b> Place along the muscle, not a tendon or bone</div>
+              <div><b>03</b> Press firm and even — snug, not too tight</div>
+              <div><b>04</b> Hold still and keep this contact</div>
+            </div>
+            <div class="meter-row">
+              <div class="meter-panel">
+                <div class="result-icon" id="calibIcon">—</div>
+                <div class="meter-ring" id="calibRing">
+                  <svg viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="52" class="ring-track"/>
+                    <circle cx="60" cy="60" r="52" class="ring-progress" id="calibRingProgress"/>
+                  </svg>
+                  <div class="meter-ring-label">
+                    <div class="meter-value mono" id="calibLiveValue">—</div>
+                  </div>
+                </div>
+                <div class="meter-unit mono">Ω baseline</div>
+              </div>
+              <div class="meter-side">
+                <div class="verdict-label">STATUS</div>
+                <div class="verdict-text" id="calibStatusText" style="--accent: var(--muted);">Idle</div>
+                <div class="summary-text" id="calibSummaryText">Run calibration to capture a baseline.</div>
+                <details class="raw-log">
+                  <summary>Raw board log</summary>
+                  <div class="mini-feed mono" id="calibLog"></div>
+                </details>
+              </div>
+            </div>
+            <div class="screen-actions">
+              <button class="btn btn-primary" id="runCalibrateBtn">Run calibration</button>
+              <button class="btn btn-ghost" id="calibBackBtn">Back</button>
+            </div>
+          </div>
+
+          <!-- CONTACT_TEST -->
+          <div class="screen" data-screen="CONTACT_TEST">
+            <h3 class="screen-title">Contact test</h3>
+            <p class="screen-sub">Place the electrodes, then run the test to get a verdict on this placement.</p>
+            <div class="meter-row">
+              <div class="meter-panel">
+                <div class="result-icon" id="testIcon">—</div>
+                <div class="quality-meter">
+                  <div class="quality-track">
+                    <div class="quality-seg" data-level="NO_CONTACT"></div>
+                    <div class="quality-seg" data-level="POOR"></div>
+                    <div class="quality-seg" data-level="MARGINAL"></div>
+                    <div class="quality-seg" data-level="GOOD"></div>
+                    <div class="quality-seg" data-level="EXCELLENT"></div>
+                  </div>
+                  <div class="quality-labels">
+                    <span>None</span><span>Poor</span><span>Marginal</span><span>Good</span><span>Excellent</span>
+                  </div>
+                </div>
+              </div>
+              <div class="meter-side">
+                <div class="verdict-label">VERDICT</div>
+                <div class="verdict-text" id="verdictText" style="--accent: var(--muted);">Idle</div>
+                <div class="summary-text" id="summaryText">Run the test to sample this placement.</div>
+                <div class="stat-pills" id="statPills"></div>
+                <details class="raw-log">
+                  <summary>Raw board log</summary>
+                  <div class="mini-feed mono" id="testLog"></div>
+                </details>
+              </div>
+            </div>
+            <div class="screen-actions">
+              <button class="btn btn-primary" id="runTestBtn">Run test</button>
+              <button class="btn btn-ghost" id="testBackBtn">Back</button>
+            </div>
+          </div>
+
+          <!-- REACTION_TIME (placeholder) -->
+          <div class="screen" data-screen="REACTION_TIME">
+            <h3 class="screen-title">Reaction-time test</h3>
+            <p class="screen-sub">Not built yet. This will run a countdown, then a randomly-timed go cue, and measure two things: how long from the cue until the muscle signal fires, and how long from that signal until the finger actually moves — averaged over several trials.</p>
+            <div class="placement-steps">
+              <div><b>01</b> Countdown, then a random 1–4 second wait</div>
+              <div><b>02</b> Go cue appears</div>
+              <div><b>03</b> Move your finger as soon as you see it</div>
+              <div><b>04</b> Repeat for 15–20 trials, then average</div>
+            </div>
+            <div class="screen-actions">
+              <button class="btn btn-ghost" id="reactionBackBtn">Back</button>
+            </div>
+          </div>
+
+          <!-- BASELINE_RECORDING (placeholder) -->
+          <div class="screen" data-screen="BASELINE_RECORDING">
+            <h3 class="screen-title">Baseline recording</h3>
+            <p class="screen-sub">Not built yet. Once contact is confirmed good, this will capture a short reference recording of the tracked channel's signal — the baseline every later session gets compared against to see whether things are trending toward recovery.</p>
+            <div class="screen-actions">
+              <button class="btn btn-ghost" id="baselineBackBtn">Back</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <p style="color:var(--muted); font-size:12px; margin-top:14px;">
+        Keyboard shortcuts work the same as the sketch while this panel is focused: <span class="mono">Esc</span> to go back, <span class="mono">Space</span> to run.
+        Baud rate is set to 9600 below the panel — change it to match your sketch if needed.
+      </p>
+      <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+        <label for="baudSelect" style="font-size:12px; color:var(--muted);">Baud rate</label>
+        <select id="baudSelect" class="mono" style="font-size:12px; padding:4px 8px; border-radius:4px; border:1px solid var(--line-strong); background:var(--panel);">
+          <option value="9600" selected>9600</option>
+          <option value="19200">19200</option>
+          <option value="38400">38400</option>
+          <option value="57600">57600</option>
+          <option value="115200">115200</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /page-test-menu -->
+
+<div class="page" data-page="data" id="page-data">
+  <section>
+    <div class="wrap" style="padding-top:56px; padding-bottom:56px;">
+      <div class="section-head">
+        <h2>Recovery data (preview)</h2>
+        <p>There's no real session storage wired up yet — this page is a preview of what tracking sessions over time will look like once it is.</p>
+      </div>
+      <div class="data-note">
+        The chart below starts with sample data. Nothing here is a real reading — use "Add simulated session" to see how a new logged session would move the trend line.
+      </div>
+      <div class="data-toolbar">
+        <button class="btn btn-primary" id="addSessionBtn">Add simulated session</button>
+        <button class="btn btn-ghost" id="resetDataBtn">Reset sample data</button>
+      </div>
+      <div class="data-chart-wrap">
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot" style="background:var(--good);"></span>Contact quality</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--warn);"></span>Signal strength index</span>
+        </div>
+        <div class="chart-scroll" id="chartScroll">
+          <svg id="dataChartSvg"></svg>
+        </div>
+      </div>
+      <p style="color:var(--muted); font-size:12px; margin-top:14px;">Session log</p>
+      <div class="mini-feed mono" id="dataLog" style="max-height:160px;"></div>
+    </div>
+  </section>
+</div><!-- /page-data -->
+
+<div class="page" data-page="specs" id="page-specs">
+  <section>
+    <div class="wrap" style="padding-top:56px; padding-bottom:56px;">
+      <div class="section-head">
+        <h2>Specs / About</h2>
+        <p>A wearable peripheral nerve recovery tracking glove, built as a hands-on science and engineering project with a real-world medical application in mind.</p>
+      </div>
+
+      <div class="specs">
+        <div style="background:var(--panel); padding:22px;">
+          <h3 style="margin-top:0;">EMG sensing</h3>
+          <p style="color:var(--muted); font-size:14px;">Single channel, 3 contacts total — 2 active electrodes plus 1 reference — read through a MyoWare-style EMG sensor.</p>
+        </div>
+        <div style="background:var(--panel); padding:22px;">
+          <h3 style="margin-top:0;">Flex sensor</h3>
+          <p style="color:var(--muted); font-size:14px;">Mounted on the index finger, spanning the DIP joint (the last knuckle nearest the fingernail) — the joint most directly affected by nerve signal to that finger.</p>
+        </div>
+        <div style="background:var(--panel); padding:22px;">
+          <h3 style="margin-top:0;">Form factor</h3>
+          <p style="color:var(--muted); font-size:14px;">Fingerless compression glove, forearm to knuckles, with a thumb opening. Compression is firm-but-not-tight — just enough to keep electrodes flush against skin without restricting blood flow.</p>
+        </div>
+        <div style="background:var(--panel); padding:22px;">
+          <h3 style="margin-top:0;">Calibration method</h3>
+          <p style="color:var(--muted); font-size:14px;">Baseline is captured on-skin, per person, at the best and firmest electrode placement — not one fixed threshold for everyone, since skin conductivity varies a lot from person to person.</p>
+        </div>
+        <div style="background:var(--panel); padding:22px;">
+          <h3 style="margin-top:0;">Verdict scale</h3>
+          <p style="color:var(--muted); font-size:14px;">Every contact reading resolves to one of five plain verdicts — None, Poor, Marginal, Good, Excellent — judged against your own calibrated baseline, averaged over repeated samples.</p>
+        </div>
+        <div style="background:var(--panel); padding:22px;">
+          <h3 style="margin-top:0;">Interface</h3>
+          <p style="color:var(--muted); font-size:14px;">Connects over Web Serial directly from the browser tab — no app install. Requires Chrome or Edge on desktop (Web Serial doesn't run on Safari or iPhone). Default baud rate 9600, adjustable in the test menu.</p>
+        </div>
+      </div>
+
+      <div class="section-head" style="margin-top:44px;">
+        <h2>Current status</h2>
+        <p>What's actually working right now, versus what's still ahead.</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px; max-width:520px;">
+        <div style="display:flex; align-items:center; gap:12px;"><span class="status-chip-sm st-live">Live</span><span>Electrode contact check</span></div>
+        <div style="display:flex; align-items:center; gap:12px;"><span class="status-chip-sm st-live">Live</span><span>Calibration</span></div>
+        <div style="display:flex; align-items:center; gap:12px;"><span class="status-chip-sm st-next">Next</span><span>Reaction-time test</span></div>
+        <div style="display:flex; align-items:center; gap:12px;"><span class="status-chip-sm st-next">Next</span><span>Baseline recording</span></div>
+        <div style="display:flex; align-items:center; gap:12px;"><span class="status-chip-sm st-planned">Planned</span><span>Session logging</span></div>
+        <div style="display:flex; align-items:center; gap:12px;"><span class="status-chip-sm st-planned">Planned</span><span>Recovery tracking over time</span></div>
+      </div>
+
+      <div class="section-head" style="margin-top:44px;">
+        <h2>Why this project</h2>
+        <p>Musicians like Augustin Hadelich and Hilary Hahn have both dealt with real nerve, tendon, or disc injuries mid-career, and recovery is usually tracked by feel — how a passage feels to play — rather than by any consistent measurement. Existing products, like the MusicGlove hand-therapy device, don't cover this specific gap: an ongoing, personal record of contact-verified signal and reaction data over the course of a recovery. This project is an attempt to close that gap with something wearable and low-cost.</p>
+        <p>The next real-world step is a conversation with a hand surgeon, physical therapist, or occupational therapist, to sanity-check electrode placement and the reaction-time test design against how nerve recovery is actually assessed clinically.</p>
+      </div>
+
+      <div class="data-note" style="margin-top:28px;">
+        Nothing typed or measured here leaves the browser tab — there's no account, no server, and no cloud storage. Data shown on the Data page is sample and simulated only, clearly labeled as such, until session logging is actually built.
+      </div>
+    </div>
+  </section>
+</div><!-- /page-specs -->
+
+  <footer>
+    Runs entirely in this tab — nothing is sent anywhere but your board. Requires Chrome or Edge on desktop for the connect button to work.
+  </footer>
+  <div class="version-switch"><a href="mobile.html" onclick="setNeurovaVersion('mobile')">Switch to mobile version</a></div>
+
+</main>
+
+
+<script src="shared.js"></script>
+</body>
+</html>
