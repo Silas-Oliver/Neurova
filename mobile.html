@@ -26,6 +26,7 @@
       <a href="#test-menu" data-nav="test-menu">Test menu</a>
       <a href="#data" data-nav="data">Data</a>
       <a href="#specs" data-nav="specs">Specs / About</a>
+      <a href="#account" data-nav="account">Account</a>
     </div>
     <div class="topbar-right">
       <div class="status-chip">
@@ -43,6 +44,7 @@
       <a href="#test-menu" data-nav="test-menu">Test menu</a>
       <a href="#data" data-nav="data">Data</a>
       <a href="#specs" data-nav="specs">Specs / About</a>
+      <a href="#account" data-nav="account">Account</a>
     </nav>
   </div>
 </div>
@@ -455,6 +457,7 @@
       <div class="data-note">
         The chart below starts with sample data. Nothing here is a real reading — use "Add simulated session" to see how a new logged session would move the trend line.
       </div>
+      <div id="dataAuthBanner"></div>
       <div class="data-toolbar">
         <button class="btn btn-primary" id="addSessionBtn">Add simulated session</button>
         <button class="btn btn-ghost" id="resetDataBtn">Reset sample data</button>
@@ -535,6 +538,18 @@
   </section>
 </div><!-- /page-specs -->
 
+<div class="page" data-page="account" id="page-account">
+  <section>
+    <div class="wrap" style="padding-top:56px; padding-bottom:56px; max-width:480px; margin:0 auto;">
+      <div class="section-head">
+        <h2>Account</h2>
+        <p>Sign in to keep future session data tied to you across devices. Session logging itself isn't built yet — this just gets your account ready for when it is.</p>
+      </div>
+      <div id="accountPanel"></div>
+    </div>
+  </section>
+</div><!-- /page-account -->
+
   <footer>
     Runs entirely in this tab — nothing is sent anywhere but your board. Requires Chrome or Edge on desktop for the connect button to work.
   </footer>
@@ -543,6 +558,10 @@
 </main>
 
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script src="shared.js"></script>
 </body>
 </html>

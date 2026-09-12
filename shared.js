@@ -1,6 +1,6 @@
 (function(){
   // ---------------- page routing ----------------
-  const PAGES = ['home', 'test-menu', 'data', 'specs'];
+  const PAGES = ['home', 'test-menu', 'data', 'specs', 'account'];
   let dataChartReady = false;
   let sessionNum = 0;
   let contactSeries = [];
@@ -702,6 +702,184 @@
     animateReveal(0, contactSeries.length - 1, 900);
   });
 
+})();
+
+// ---------------- account / authentication ----------------
+(function(){
+  const accountPanel = document.getElementById('accountPanel');
+  const dataAuthBanner = document.getElementById('dataAuthBanner');
+  if(!accountPanel && !dataAuthBanner) return;
+
+  const config = window.NEUROVA_FIREBASE_CONFIG;
+  const configIsPlaceholder = !config || String(config.apiKey || '').indexOf('PASTE') !== -1;
+  const firebaseLoaded = typeof window.firebase !== 'undefined';
+  const firebaseReady = firebaseLoaded && !configIsPlaceholder;
+
+  let auth = null;
+  let db = null;
+  let currentUser = null;
+  let authMode = 'login'; // 'login' | 'signup'
+  let authError = '';
+  let authBusy = false;
+
+  if(firebaseReady){
+    try{
+      if(!firebase.apps.length) firebase.initializeApp(config);
+      auth = firebase.auth();
+      db = firebase.firestore();
+    }catch(e){
+      console.error('Firebase failed to initialize:', e);
+    }
+  }
+
+  function friendlyAuthError(code){
+    const map = {
+      'auth/email-already-in-use': "That email already has an account — try logging in instead.",
+      'auth/invalid-email': "That doesn't look like a valid email address.",
+      'auth/weak-password': "Passwords need to be at least 6 characters.",
+      'auth/user-not-found': "No account found with that email.",
+      'auth/wrong-password': "That password doesn't match this account.",
+      'auth/invalid-credential': "That email and password combination doesn't match an account.",
+      'auth/too-many-requests': "Too many attempts — wait a bit before trying again.",
+      'auth/network-request-failed': "Couldn't reach the server — check your connection and try again."
+    };
+    return map[code] || "Something went wrong. Please try again.";
+  }
+
+  function initials(email){
+    return (email || '?').trim().charAt(0).toUpperCase();
+  }
+
+  function renderNotConfigured(){
+    if(!accountPanel) return;
+    accountPanel.innerHTML = `
+      <div class="auth-card">
+        <h3>Accounts aren't connected yet</h3>
+        <p class="auth-sub">This site's Firebase project hasn't been set up yet, so sign-in isn't live. Once a real config is pasted into <span class="mono">firebase-config.js</span>, this page will let you create an account and log in from any device.</p>
+      </div>`;
+  }
+
+  function renderSignedIn(){
+    if(!accountPanel) return;
+    accountPanel.innerHTML = `
+      <div class="auth-card">
+        <div class="auth-signed-in-row">
+          <div class="auth-avatar">${initials(currentUser.email)}</div>
+          <div>
+            <div style="font-weight:600;">${currentUser.email}</div>
+            <div style="color:var(--muted); font-size:12.5px;">Signed in</div>
+          </div>
+        </div>
+        <button class="btn btn-ghost" id="logoutBtn" ${authBusy ? 'disabled' : ''}>Log out</button>
+        <div class="auth-note">Session logging isn't built yet, so there's nothing to sync across devices just yet — but your account is ready for when it is.</div>
+      </div>`;
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      authBusy = true; renderSignedIn();
+      try{ await auth.signOut(); } catch(e){ console.error(e); }
+      authBusy = false;
+    });
+  }
+
+  function renderLoggedOutForm(){
+    if(!accountPanel) return;
+    const isSignup = authMode === 'signup';
+    accountPanel.innerHTML = `
+      <div class="auth-card">
+        <h3>${isSignup ? 'Create an account' : 'Log in'}</h3>
+        <p class="auth-sub">${isSignup ? 'Just an email and a password — nothing else is collected.' : 'Log in to the account you set up earlier.'}</p>
+        ${authError ? `<div class="auth-error">${authError}</div>` : ''}
+        <form id="authForm">
+          <div class="form-group">
+            <label for="authEmail">Email</label>
+            <input type="email" id="authEmail" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label for="authPassword">Password</label>
+            <input type="password" id="authPassword" autocomplete="${isSignup ? 'new-password' : 'current-password'}" required minlength="6">
+          </div>
+          <div class="auth-actions">
+            <button type="submit" class="btn btn-primary" id="authSubmitBtn" ${authBusy ? 'disabled' : ''}>
+              ${authBusy ? 'Please wait…' : (isSignup ? 'Create account' : 'Log in')}
+            </button>
+          </div>
+        </form>
+        <div class="auth-toggle">
+          ${isSignup
+            ? `Already have an account? <a id="authToggle">Log in</a>`
+            : `Don't have an account yet? <a id="authToggle">Create one</a>`}
+        </div>
+      </div>`;
+
+    document.getElementById('authToggle').addEventListener('click', () => {
+      authMode = isSignup ? 'login' : 'signup';
+      authError = '';
+      renderLoggedOutForm();
+    });
+
+    document.getElementById('authForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      authError = '';
+      authBusy = true;
+      renderLoggedOutForm();
+      try{
+        if(isSignup){
+          const cred = await auth.createUserWithEmailAndPassword(email, password);
+          if(db && cred.user){
+            db.collection('users').doc(cred.user.uid).set({
+              email: cred.user.email,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }).catch(err => console.error('Profile write failed:', err));
+          }
+        } else {
+          await auth.signInWithEmailAndPassword(email, password);
+        }
+        // onAuthStateChanged will re-render on success
+      } catch(err){
+        authBusy = false;
+        authError = friendlyAuthError(err.code);
+        renderLoggedOutForm();
+      }
+    });
+  }
+
+  function renderAccountPanel(){
+    if(!accountPanel) return;
+    if(!firebaseReady) return renderNotConfigured();
+    if(currentUser) return renderSignedIn();
+    return renderLoggedOutForm();
+  }
+
+  function renderDataAuthBanner(){
+    if(!dataAuthBanner) return;
+    if(!firebaseReady){ dataAuthBanner.innerHTML = ''; return; }
+    if(currentUser){
+      dataAuthBanner.innerHTML = `<div class="data-auth-banner"><span>Signed in as <b style="color:var(--ink);">${currentUser.email}</b> — real sessions will sync here once session logging is built.</span></div>`;
+    } else {
+      dataAuthBanner.innerHTML = `<div class="data-auth-banner"><span>You're not signed in — this sample data is local to this browser only.</span><a href="#account" data-nav="account">Log in</a></div>`;
+      const link = dataAuthBanner.querySelector('a[data-nav]');
+      if(link) link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const navLink = document.querySelector('.topnav a[data-nav="account"], .mobile-nav-panel a[data-nav="account"]');
+        if(navLink) navLink.click();
+      });
+    }
+  }
+
+  if(firebaseReady && auth){
+    auth.onAuthStateChanged(user => {
+      currentUser = user;
+      if(!user) authMode = 'login';
+      authError = '';
+      authBusy = false;
+      renderAccountPanel();
+      renderDataAuthBanner();
+    });
+  } else {
+    renderAccountPanel();
+    renderDataAuthBanner();
+  }
 })();
 
 // ---------------- remember a manually-chosen desktop/mobile version ----------------
