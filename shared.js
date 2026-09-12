@@ -496,6 +496,18 @@ window.Neurova = window.Neurova || {};
     setTestUnlocked(true);
   };
 
+  // Wipes the calibration screen back to a clean, un-calibrated state — used whenever
+  // the signed-in account changes (login, logout, or switching accounts), so a previous
+  // account's baseline can never linger on screen or leave the contact test unlocked
+  // for someone it doesn't belong to.
+  window.Neurova.resetCalibration = function(){
+    document.getElementById('calibLiveValue').textContent = '—';
+    setResultIcon('calibIcon', 'muted', false);
+    setCalibProgress(0);
+    setCalibStatus('Idle', 'muted', 'Run calibration to capture a baseline.');
+    setTestUnlocked(false);
+  };
+
   function finishCalibration(result){
     clearTimeout(calibTimeoutId);
     clearInterval(calibProgressTimer);
@@ -761,6 +773,7 @@ window.Neurova = window.Neurova || {};
   let confirmingDelete = false;
   let deleteBusy = false;
   let deleteError = '';
+  let needsReauth = false;
   let exportBusy = false;
 
   if(firebaseReady){
@@ -782,6 +795,7 @@ window.Neurova = window.Neurova || {};
         calibrationBaseline: baselineOhms,
         calibrationSavedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
+      cachedProfile = Object.assign({}, cachedProfile, { calibrationBaseline: baselineOhms });
       return true;
     }catch(e){
       console.error('Saving calibration baseline failed:', e);
@@ -793,6 +807,7 @@ window.Neurova = window.Neurova || {};
     if(!firebaseReady || !currentUser || !db) return;
     try{
       const snap = await db.collection('users').doc(currentUser.uid).get();
+      cachedProfile = snap.exists ? snap.data() : {};
       if(snap.exists && window.Neurova.applySavedCalibration){
         window.Neurova.applySavedCalibration(snap.data());
       }
@@ -874,39 +889,72 @@ window.Neurova = window.Neurova || {};
     return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
+  // Cached copy of this user's Firestore profile doc, kept in sync whenever we read or
+  // write it (login restore, calibration save). Lets "Export my data" build its file
+  // instantly from memory instead of awaiting a fresh network read — a download
+  // triggered after an async gap can get silently blocked by the browser as not being
+  // tied closely enough to the click that started it.
+  let cachedProfile = null;
+
+  function buildExportBlob(){
+    const exportObj = {
+      email: currentUser.email,
+      name: currentUser.displayName || (cachedProfile && cachedProfile.name) || null,
+      memberSince: memberSinceText() || null,
+      calibrationBaselineOhms: (cachedProfile && typeof cachedProfile.calibrationBaseline === 'number') ? cachedProfile.calibrationBaseline : null,
+      exportedAt: new Date().toISOString()
+    };
+    return new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+  }
+
+  function triggerDownload(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   async function exportMyData(){
+    // Common case: we already have a cached profile (login always fetches one), so this
+    // is fully synchronous and the download fires in the same tick as the click.
+    if(cachedProfile !== null){
+      triggerDownload(buildExportBlob(), 'neurova-account-data.json');
+      return;
+    }
+    // Rare fallback: nothing cached yet (e.g. clicked right after login before the
+    // background fetch resolved) — fetch once, cache it, then download.
     const btn = document.getElementById('exportDataBtn');
     exportBusy = true;
     if(btn){ btn.disabled = true; btn.textContent = 'Preparing export…'; }
     try{
-      let profile = {};
       if(db && currentUser){
         const snap = await db.collection('users').doc(currentUser.uid).get();
-        if(snap.exists) profile = snap.data();
+        cachedProfile = snap.exists ? snap.data() : {};
+      } else {
+        cachedProfile = {};
       }
-      const exportObj = {
-        email: currentUser.email,
-        name: currentUser.displayName || profile.name || null,
-        memberSince: memberSinceText() || null,
-        calibrationBaselineOhms: typeof profile.calibrationBaseline === 'number' ? profile.calibrationBaseline : null,
-        exportedAt: new Date().toISOString()
-      };
-      const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'neurova-account-data.json';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      triggerDownload(buildExportBlob(), 'neurova-account-data.json');
     }catch(e){
       console.error('Export failed:', e);
-      alert('Export failed — please try again.');
+      deleteError = ''; // unrelated field, just being explicit we're not touching it
+      alert('Export failed — please check your connection and try again.');
     }finally{
       exportBusy = false;
       if(btn){ btn.disabled = false; btn.textContent = 'Export my data'; }
     }
+  }
+
+  async function deleteAccountData(){
+    if(db && currentUser){
+      try{ await db.collection('users').doc(currentUser.uid).delete(); }
+      catch(e){ console.error('Deleting profile doc failed:', e); }
+    }
+    await currentUser.delete();
+    // onAuthStateChanged fires with null and re-renders to the logged-out form.
   }
 
   async function performDeleteAccount(){
@@ -914,17 +962,36 @@ window.Neurova = window.Neurova || {};
     deleteError = '';
     renderSignedIn();
     try{
-      if(db && currentUser){
-        try{ await db.collection('users').doc(currentUser.uid).delete(); }
-        catch(e){ console.error('Deleting profile doc failed:', e); }
-      }
-      await currentUser.delete();
-      // onAuthStateChanged fires with null and re-renders to the logged-out form
+      await deleteAccountData();
     }catch(e){
       deleteBusy = false;
-      deleteError = (e.code === 'auth/requires-recent-login')
-        ? "For security, please log out and log back in, then try deleting your account again."
-        : "Something went wrong deleting your account. Please try again.";
+      if(e && e.code === 'auth/requires-recent-login'){
+        // Firebase blocks deletion unless the session is "fresh" — rather than dead-end
+        // the person with a log-out-and-back-in instruction, reauthenticate right here.
+        needsReauth = true;
+      } else {
+        deleteError = "Something went wrong deleting your account. Please try again.";
+      }
+      renderSignedIn();
+    }
+  }
+
+  async function reauthenticateAndDelete(password){
+    deleteBusy = true;
+    deleteError = '';
+    renderSignedIn();
+    try{
+      const providerId = (currentUser.providerData[0] && currentUser.providerData[0].providerId) || 'password';
+      if(providerId === 'google.com'){
+        await currentUser.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
+      } else {
+        const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
+        await currentUser.reauthenticateWithCredential(cred);
+      }
+      await deleteAccountData();
+    }catch(e){
+      deleteBusy = false;
+      deleteError = friendlyAuthError(e.code);
       renderSignedIn();
     }
   }
@@ -934,8 +1001,32 @@ window.Neurova = window.Neurova || {};
     const name = displayNameOf(currentUser);
     const showEmailSecondary = currentUser.displayName && currentUser.displayName !== currentUser.email;
     const since = memberSinceText();
+    const isGoogleAccount = currentUser.providerData[0] && currentUser.providerData[0].providerId === 'google.com';
 
-    const deleteSection = confirmingDelete ? `
+    let deleteSection;
+    if(needsReauth){
+      deleteSection = `
+      <div class="danger-zone">
+        ${deleteError ? `<div class="auth-error">${deleteError}</div>` : ''}
+        <p class="danger-copy">For security, please confirm it's you before this account gets deleted.</p>
+        ${isGoogleAccount ? `
+        <div class="auth-actions">
+          <button class="btn btn-danger" id="reauthConfirmBtn" ${deleteBusy ? 'disabled' : ''}>${deleteBusy ? 'Please wait…' : 'Confirm with Google & delete'}</button>
+          <button class="btn btn-ghost" id="cancelDeleteBtn" ${deleteBusy ? 'disabled' : ''}>Cancel</button>
+        </div>` : `
+        <form id="reauthForm">
+          <div class="form-group">
+            <label for="reauthPassword">Password</label>
+            <input type="password" id="reauthPassword" autocomplete="current-password" required>
+          </div>
+          <div class="auth-actions">
+            <button type="submit" class="btn btn-danger" id="reauthConfirmBtn" ${deleteBusy ? 'disabled' : ''}>${deleteBusy ? 'Please wait…' : 'Confirm & delete'}</button>
+            <button type="button" class="btn btn-ghost" id="cancelDeleteBtn" ${deleteBusy ? 'disabled' : ''}>Cancel</button>
+          </div>
+        </form>`}
+      </div>`;
+    } else if(confirmingDelete){
+      deleteSection = `
       <div class="danger-zone">
         ${deleteError ? `<div class="auth-error">${deleteError}</div>` : ''}
         <p class="danger-copy">This permanently deletes your account and any saved data, including your calibration baseline. This can't be undone.</p>
@@ -943,8 +1034,10 @@ window.Neurova = window.Neurova || {};
           <button class="btn btn-danger" id="confirmDeleteBtn" ${deleteBusy ? 'disabled' : ''}>${deleteBusy ? 'Deleting…' : 'Yes, delete my account'}</button>
           <button class="btn btn-ghost" id="cancelDeleteBtn" ${deleteBusy ? 'disabled' : ''}>Cancel</button>
         </div>
-      </div>` : `
-      <button class="btn-text-danger" id="deleteAccountBtn">Delete account</button>`;
+      </div>`;
+    } else {
+      deleteSection = `<button class="btn-text-danger" id="deleteAccountBtn">Delete account</button>`;
+    }
 
     accountPanel.innerHTML = `
       <div class="auth-card">
@@ -969,7 +1062,19 @@ window.Neurova = window.Neurova || {};
       authBusy = false;
     });
     document.getElementById('exportDataBtn').addEventListener('click', exportMyData);
-    if(confirmingDelete){
+
+    if(needsReauth){
+      const cancel = () => { needsReauth = false; confirmingDelete = false; deleteError = ''; renderSignedIn(); };
+      document.getElementById('cancelDeleteBtn').addEventListener('click', cancel);
+      if(isGoogleAccount){
+        document.getElementById('reauthConfirmBtn').addEventListener('click', () => reauthenticateAndDelete());
+      } else {
+        document.getElementById('reauthForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          reauthenticateAndDelete(document.getElementById('reauthPassword').value);
+        });
+      }
+    } else if(confirmingDelete){
       document.getElementById('confirmDeleteBtn').addEventListener('click', performDeleteAccount);
       document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
         confirmingDelete = false; deleteError = ''; renderSignedIn();
@@ -1090,12 +1195,13 @@ window.Neurova = window.Neurova || {};
   if(firebaseReady && auth){
     auth.onAuthStateChanged(user => {
       currentUser = user;
-      if(!user){ authMode = 'login'; confirmingDelete = false; deleteError = ''; }
+      if(!user){ authMode = 'login'; confirmingDelete = false; deleteError = ''; needsReauth = false; cachedProfile = null; }
       authError = '';
       authBusy = false;
       renderAccountPanel();
       renderDataAuthBanner();
       if(window.Neurova.onAccountChange) window.Neurova.onAccountChange();
+      if(window.Neurova.resetCalibration) window.Neurova.resetCalibration();
       if(user) loadSavedCalibrationForCurrentUser();
     });
   } else {
