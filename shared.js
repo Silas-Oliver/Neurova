@@ -741,13 +741,51 @@
       'auth/wrong-password': "That password doesn't match this account.",
       'auth/invalid-credential': "That email and password combination doesn't match an account.",
       'auth/too-many-requests': "Too many attempts — wait a bit before trying again.",
-      'auth/network-request-failed': "Couldn't reach the server — check your connection and try again."
+      'auth/network-request-failed': "Couldn't reach the server — check your connection and try again.",
+      'auth/popup-closed-by-user': "The Google sign-in window was closed before finishing — try again.",
+      'auth/popup-blocked': "Your browser blocked the sign-in popup — allow popups for this site and try again.",
+      'auth/cancelled-popup-request': "That sign-in attempt was cancelled — try again.",
+      'auth/account-exists-with-different-credential': "This email is already used with a different sign-in method — try logging in with a password instead.",
+      'auth/unauthorized-domain': "This site's domain isn't authorized for Google sign-in yet in the Firebase console."
     };
     return map[code] || "Something went wrong. Please try again.";
   }
 
-  function initials(email){
-    return (email || '?').trim().charAt(0).toUpperCase();
+  function initials(name){
+    return (name || '?').trim().charAt(0).toUpperCase();
+  }
+
+  function displayNameOf(user){
+    return (user && user.displayName) ? user.displayName : (user ? user.email : '');
+  }
+
+  const GOOGLE_ICON_SVG = `<svg viewBox="0 0 18 18">
+    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.259h2.908c1.702-1.567 2.684-3.874 2.684-6.617z"/>
+    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+    <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/>
+    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+  </svg>`;
+
+  async function signInWithGoogle(){
+    authError = '';
+    authBusy = true;
+    renderAccountPanel();
+    try{
+      const provider = new firebase.auth.GoogleAuthProvider();
+      const result = await auth.signInWithPopup(provider);
+      if(db && result.user){
+        db.collection('users').doc(result.user.uid).set({
+          email: result.user.email,
+          name: result.user.displayName || '',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(err => console.error('Profile write failed:', err));
+      }
+      // onAuthStateChanged will re-render on success
+    } catch(err){
+      authBusy = false;
+      authError = friendlyAuthError(err.code);
+      renderAccountPanel();
+    }
   }
 
   function renderNotConfigured(){
@@ -761,13 +799,15 @@
 
   function renderSignedIn(){
     if(!accountPanel) return;
+    const name = displayNameOf(currentUser);
+    const showEmailSecondary = currentUser.displayName && currentUser.displayName !== currentUser.email;
     accountPanel.innerHTML = `
       <div class="auth-card">
         <div class="auth-signed-in-row">
-          <div class="auth-avatar">${initials(currentUser.email)}</div>
+          <div class="auth-avatar">${initials(name)}</div>
           <div>
-            <div style="font-weight:600;">${currentUser.email}</div>
-            <div style="color:var(--muted); font-size:12.5px;">Signed in</div>
+            <div style="font-weight:600;">${name}</div>
+            <div style="color:var(--muted); font-size:12.5px;">${showEmailSecondary ? currentUser.email : 'Signed in'}</div>
           </div>
         </div>
         <button class="btn btn-ghost" id="logoutBtn" ${authBusy ? 'disabled' : ''}>Log out</button>
@@ -786,9 +826,18 @@
     accountPanel.innerHTML = `
       <div class="auth-card">
         <h3>${isSignup ? 'Create an account' : 'Log in'}</h3>
-        <p class="auth-sub">${isSignup ? 'Just an email and a password — nothing else is collected.' : 'Log in to the account you set up earlier.'}</p>
+        <p class="auth-sub">${isSignup ? 'A name, an email, and a password — nothing else is collected.' : 'Log in to the account you set up earlier.'}</p>
         ${authError ? `<div class="auth-error">${authError}</div>` : ''}
+        <button type="button" class="btn-google" id="googleSignInBtn" ${authBusy ? 'disabled' : ''}>
+          ${GOOGLE_ICON_SVG}<span>Continue with Google</span>
+        </button>
+        <div class="auth-divider">or</div>
         <form id="authForm">
+          ${isSignup ? `
+          <div class="form-group">
+            <label for="authName">Name</label>
+            <input type="text" id="authName" autocomplete="name" required>
+          </div>` : ''}
           <div class="form-group">
             <label for="authEmail">Email</label>
             <input type="email" id="authEmail" autocomplete="email" required>
@@ -816,8 +865,11 @@
       renderLoggedOutForm();
     });
 
+    document.getElementById('googleSignInBtn').addEventListener('click', signInWithGoogle);
+
     document.getElementById('authForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const name = isSignup ? document.getElementById('authName').value.trim() : '';
       const email = document.getElementById('authEmail').value.trim();
       const password = document.getElementById('authPassword').value;
       authError = '';
@@ -826,16 +878,23 @@
       try{
         if(isSignup){
           const cred = await auth.createUserWithEmailAndPassword(email, password);
-          if(db && cred.user){
-            db.collection('users').doc(cred.user.uid).set({
-              email: cred.user.email,
-              createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true }).catch(err => console.error('Profile write failed:', err));
+          if(cred.user){
+            try{ await cred.user.updateProfile({ displayName: name }); } catch(e){ console.error('Profile name update failed:', e); }
+            currentUser = auth.currentUser;
+            if(db){
+              db.collection('users').doc(cred.user.uid).set({
+                email: cred.user.email,
+                name: name,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              }, { merge: true }).catch(err => console.error('Profile write failed:', err));
+            }
+            renderAccountPanel();
+            renderDataAuthBanner();
           }
         } else {
           await auth.signInWithEmailAndPassword(email, password);
         }
-        // onAuthStateChanged will re-render on success
+        // onAuthStateChanged also re-renders on success; harmless if it fires again
       } catch(err){
         authBusy = false;
         authError = friendlyAuthError(err.code);
@@ -855,7 +914,7 @@
     if(!dataAuthBanner) return;
     if(!firebaseReady){ dataAuthBanner.innerHTML = ''; return; }
     if(currentUser){
-      dataAuthBanner.innerHTML = `<div class="data-auth-banner"><span>Signed in as <b style="color:var(--ink);">${currentUser.email}</b> — real sessions will sync here once session logging is built.</span></div>`;
+      dataAuthBanner.innerHTML = `<div class="data-auth-banner"><span>Signed in as <b style="color:var(--ink);">${displayNameOf(currentUser)}</b> — real sessions will sync here once session logging is built.</span></div>`;
     } else {
       dataAuthBanner.innerHTML = `<div class="data-auth-banner"><span>You're not signed in — this sample data is local to this browser only.</span><a href="#account" data-nav="account">Log in</a></div>`;
       const link = dataAuthBanner.querySelector('a[data-nav]');

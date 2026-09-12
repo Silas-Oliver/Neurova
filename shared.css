@@ -475,3 +475,19 @@
   }
   .data-auth-banner a{color:var(--primary); font-weight:600; text-decoration:none; white-space:nowrap;}
   .data-auth-banner a:hover{text-decoration:underline;}
+
+  /* ---------- google sign-in button ---------- */
+  .btn-google{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    width:100%; background:#ffffff; color:#1f1f1f; border:1px solid var(--line-strong);
+    border-radius:var(--radius); padding:11px 20px; font-size:14px; font-weight:600;
+    font-family:'IBM Plex Sans', sans-serif; cursor:pointer;
+    transition:background 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn-google:hover{background:#f7f7f7;}
+  .btn-google:disabled{opacity:0.5; cursor:not-allowed;}
+  .btn-google svg{width:18px; height:18px; flex:none;}
+  .auth-divider{
+    display:flex; align-items:center; gap:12px; margin:18px 0; color:var(--muted); font-size:12px;
+  }
+  .auth-divider::before, .auth-divider::after{content:''; flex:1; height:1px; background:var(--line);}
