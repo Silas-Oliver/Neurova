@@ -835,7 +835,8 @@ window.Neurova = window.Neurova || {};
       'auth/popup-blocked': "Your browser blocked the sign-in popup — allow popups for this site and try again.",
       'auth/cancelled-popup-request': "That sign-in attempt was cancelled — try again.",
       'auth/account-exists-with-different-credential': "This email is already used with a different sign-in method — try logging in with a password instead.",
-      'auth/unauthorized-domain': "This site's domain isn't authorized for Google sign-in yet in the Firebase console."
+      'auth/unauthorized-domain': "This site's domain isn't authorized for Google sign-in yet in the Firebase console.",
+      'neurova/timeout': "That's taking much longer than it should — check your connection and try again."
     };
     return map[code] || "Something went wrong. Please try again.";
   }
@@ -953,12 +954,31 @@ window.Neurova = window.Neurova || {};
     }
   }
 
+  // Wraps a promise so it gives up with a clear error instead of hanging forever if the
+  // connection stalls — without this, a stuck network request leaves "Deleting…" (or any
+  // other busy state) spinning indefinitely with no feedback at all.
+  function withTimeout(promise, ms){
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if(settled) return;
+        settled = true;
+        reject({ code: 'neurova/timeout' });
+      }, ms);
+      promise.then(
+        (val) => { if(settled) return; settled = true; clearTimeout(timer); resolve(val); },
+        (err) => { if(settled) return; settled = true; clearTimeout(timer); reject(err); }
+      );
+    });
+  }
+  const NETWORK_TIMEOUT_MS = 12000;
+
   async function deleteAccountData(){
     if(db && currentUser){
-      try{ await db.collection('users').doc(currentUser.uid).delete(); }
-      catch(e){ console.error('Deleting profile doc failed:', e); }
+      try{ await withTimeout(db.collection('users').doc(currentUser.uid).delete(), NETWORK_TIMEOUT_MS); }
+      catch(e){ console.error('Deleting profile doc failed or timed out:', e); }
     }
-    await currentUser.delete();
+    await withTimeout(currentUser.delete(), NETWORK_TIMEOUT_MS);
     // onAuthStateChanged fires with null and re-renders to the logged-out form.
   }
 
@@ -975,7 +995,7 @@ window.Neurova = window.Neurova || {};
         // the person with a log-out-and-back-in instruction, reauthenticate right here.
         needsReauth = true;
       } else {
-        deleteError = "Something went wrong deleting your account. Please try again.";
+        deleteError = friendlyAuthError(e && e.code);
       }
       renderSignedIn();
     }
@@ -988,15 +1008,15 @@ window.Neurova = window.Neurova || {};
     try{
       const providerId = (currentUser.providerData[0] && currentUser.providerData[0].providerId) || 'password';
       if(providerId === 'google.com'){
-        await currentUser.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
+        await withTimeout(currentUser.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider()), NETWORK_TIMEOUT_MS);
       } else {
         const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
-        await currentUser.reauthenticateWithCredential(cred);
+        await withTimeout(currentUser.reauthenticateWithCredential(cred), NETWORK_TIMEOUT_MS);
       }
       await deleteAccountData();
     }catch(e){
       deleteBusy = false;
-      deleteError = friendlyAuthError(e.code);
+      deleteError = friendlyAuthError(e && e.code);
       renderSignedIn();
     }
   }
