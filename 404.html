@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neurova</title>
+<script>
+(function(){
+  // GitHub Pages serves this file for any URL that doesn't match a real file.
+  // The most common reason for that on this site is someone typing or linking
+  // to the right page with the wrong capitalization — GitHub Pages' file
+  // matching is case-sensitive even though the domain itself never is.
+  // If lowercasing the path gives us a different URL, try that instead.
+  var path = window.location.pathname;
+  var lower = path.toLowerCase();
+  if(lower !== path){
+    window.location.replace(window.location.origin + lower + window.location.search + window.location.hash);
+  }
+})();
+</script>
+</head>
+<body style="font-family:sans-serif; max-width:520px; margin:15vh auto; padding:0 24px; color:#1c2b27;">
+  <h1 style="font-size:22px;">Page not found</h1>
+  <p style="color:#5c6d68; line-height:1.6;">
+    That address doesn't match a page on this site. If you typed or pasted a link with different capitalization,
+    you should be redirected automatically in a moment — if not, head back to the homepage.
+  </p>
+  <p><a href="/" style="color:#2f6e63; font-weight:600;">Go to the homepage</a></p>
+</body>
+</html>
