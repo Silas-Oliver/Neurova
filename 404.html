@@ -13,6 +13,16 @@
   // If lowercasing the path gives us a different URL, try that instead.
   var path = window.location.pathname;
   var lower = path.toLowerCase();
+
+  // A bare folder path (no filename, e.g. "/neurova") needs its trailing slash
+  // added back before GitHub Pages will treat it as "serve index.html here" —
+  // without this, "/Neurova" would lowercase to "/neurova" and still 404.
+  var lastSegment = lower.substring(lower.lastIndexOf('/') + 1);
+  var looksLikeFile = lastSegment.indexOf('.') !== -1;
+  if(!looksLikeFile && lower.charAt(lower.length - 1) !== '/'){
+    lower += '/';
+  }
+
   if(lower !== path){
     window.location.replace(window.location.origin + lower + window.location.search + window.location.hash);
   }
