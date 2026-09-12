@@ -514,3 +514,15 @@
   }
   .btn-danger:hover{background:#a83f34;}
   .btn-danger:disabled{opacity:0.6; cursor:not-allowed;}
+
+  /* ---------- mobile.html: explain the Web Serial limitation instead of a dead-end button ---------- */
+  .mobile-hardware-explainer{
+    display:none;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-lg);
+    padding:22px; margin-bottom:24px;
+  }
+  .mobile-hardware-explainer h3{font-size:16px; margin:0 0 10px;}
+  .mobile-hardware-explainer p{color:var(--muted); font-size:13.5px; line-height:1.55; margin:0 0 10px;}
+  .mobile-hardware-explainer p:last-child{margin-bottom:0;}
+  .force-mobile .mobile-hardware-explainer{display:block;}
+  .force-mobile .live-hardware-block{display:none;}

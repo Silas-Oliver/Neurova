@@ -271,6 +271,13 @@
         <p>This talks to the glove's board directly from the browser over Web Serial, without opening the Arduino IDE. Calibration and the contact check are working; the reaction-time test and baseline recording are next up and shown here as placeholders. Run contact check before every other test — nothing else can be trusted without it.</p>
       </div>
 
+      <div class="mobile-hardware-explainer">
+        <h3>This part needs a laptop</h3>
+        <p>Live connection to the glove uses a browser feature (Web Serial) that only exists in Chrome or Edge on a desktop or laptop — no phone browser supports it, including Safari and Chrome on iPhone and Android. That's a browser limitation, not something this site can work around with layout or design changes.</p>
+        <p>Everything else here works fine on your phone: Home, Data, Specs, and your Account all just aren't wired to live hardware. When you're ready to actually run a calibration or contact test, open this same site in Chrome or Edge on a computer with the board plugged in.</p>
+      </div>
+
+      <div class="live-hardware-block">
       <div id="unsupportedNotice" class="unsupported" style="display:none;">
         This browser doesn't support Web Serial. Open this page in Chrome or Edge on desktop to connect the board directly.
       </div>
@@ -443,6 +450,7 @@
           <option value="115200">115200</option>
         </select>
       </div>
+      </div><!-- /live-hardware-block -->
     </div>
   </section>
 
